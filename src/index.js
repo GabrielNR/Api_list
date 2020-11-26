@@ -1,11 +1,36 @@
 const express = require('express');
-const { v4: uuid} = require('uuid')
+const { v4: uuid, v4: isUuid} = require('uuid')
 
 const app = express();
 
 app.use(express.json());
 
 const projects = []
+
+function logRequests(request, response, next){
+
+    const { method, url } = request
+    const logLabel = `[${method.toUpperCase()} ${url}]`
+  
+    console.log(logLabel);
+  
+    return next();
+  
+}
+
+function validateProjectId(request, response, next) {
+    const { id } = request.params;
+
+    if (!isUuid(id)){
+        return response.status(400).json({errot: 'Invalid project ID.'})
+    }
+    return next()
+}
+
+app.use(logRequests)
+  
+
+
 
 app.get('/projects', (request, response) => {
     const {title } = request.query;
@@ -30,7 +55,7 @@ app.post('/projects', (request, response) => {
 });
 
 
-app.put('/projects/:id', (request, response) => {
+app.put('/projects/:id', validateProjectId, (request, response) => {
     
     const { id } = request.params
     const { title, owner } = request.body
@@ -55,7 +80,7 @@ const project = {
 })
 
 
-app.delete('/projects/:id', (request, response) => {
+app.delete('/projects/:id', validateProjectId, (request, response) => {
   const { id } = request.params;
 
   const projectIndex = projects.findIndex(project => project.id === id);
